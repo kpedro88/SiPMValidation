@@ -31,8 +31,9 @@ process.source = cms.Source("PoolSource",
 )
 
 process.demo = cms.EDAnalyzer("QIE11Validation",
-    rootOutputFile = cms.string('QIE11digis_'+options.inputName+'.root'),
-    QIE11tag = cms.InputTag("simHcalUnsuppressedDigis","HBHEQIE11DigiCollection")
+    rootOutputFile = cms.string('QIE11digis_vs_RecHits_'+options.inputName+'.root'),
+    QIE11tag = cms.InputTag("simHcalUnsuppressedDigis","HBHEQIE11DigiCollection"),
+    RecHittag = cms.InputTag("hbhereco")
 )
 
 process.p = cms.Path(process.demo)

@@ -1,13 +1,13 @@
 ## Installation
 
-To install this code in CMSSW (e.g. CMSSW_8_1_0_pre8):
+To install this code in CMSSW:
 ```
-cmsrel CMSSW_8_1_0_pre8
-cd CMSSW_8_1_0_pre8/src/
+cmsrel CMSSW_8_1_0_pre11
+cd CMSSW_8_1_0_pre11/src/
 git cms-init
 mkdir test
 cd test
-git clone git@github.com:kpedro88/SiPMValidation
+git clone git@github.com:kpedro88/SiPMValidation -b DigiReco
 scram b -j 8
 ```
 
@@ -17,17 +17,6 @@ scram b -j 8
 * Run analyzer with script [doAnalysis.sh](./test/doAnalysis.sh)
 * Run macro to produce plots, example:
 ```
-root -b -q -l 'plotPulses.C+(\
-{"QIE11digis_step1_old.root","QIE11digis_step1_new.root"},\
-{"81Xpre8 (old)","81Xpre8 (new)"},\
-{"81Xpre8_old","81Xpre8_new"},\
-{125,125},\
-{kBlack,kBlue},\
-1,1)'
+root -b -l -q 'plotPulses.C+({"QIE11digis_vs_RecHits_step1.root"},{"81Xpre11 digis (revertSiPM)"},{"81Xpre11_revert_digi"},{125},{kBlack},1,1,0)'
+root -b -l -q 'plotPulses.C+({"QIE11digis_vs_RecHits_step1.root"},{"81Xpre11 rechits (revertSiPM)"},{"81Xpre11_revert_rechit"},{125},{kBlack},1,1,1)'
 ```
-
-## Special instructions for CMSSW_6_2_X_SLHC
-
-* `git cms-merge-topic kpedro88:81X_SiPM_params_620SLHC28` to get new HE segmentation and new params (revert last commit to return to old params)
-* QIE11 analyzer will not compile
-* use special script [doStep1_62XSLHC.sh](./test/doStep1_62XSLHC.sh) for GEN-SIM-DIGI

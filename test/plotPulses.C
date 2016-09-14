@@ -26,7 +26,7 @@ void DigiClass::Loop() {}
 class DigiClass2 : public DigiClass {
 	public:
 		DigiClass2(TTree *tree=0) : DigiClass(tree), norm(false) {}
-		pair<TH2F*,TGraphErrors*> Loop(int cut){
+		pair<TH2F*,TGraphErrors*> Loop(int cut, bool rechit){
 			if (fChain == 0) return make_pair((TH2F*)NULL,(TGraphErrors*)NULL);
 
 			vector<string> bin_names;
@@ -39,12 +39,13 @@ class DigiClass2 : public DigiClass {
 				Long64_t ientry = LoadTree(jentry);
 				if (ientry < 0) break;
 				nb = fChain->GetEntry(jentry);   nbytes += nb;
-				if(adc->at(4) <= cut) continue; //cut on SOI
+				if((rechit && adcR->at(4) <= cut) || (!rechit && adc->at(4) <= cut)) continue; //cut on SOI
 				
 				stringstream ss;
 				ss << "i#eta = " << ieta << " i#phi = " << iphi << " d = " << depth;
 				bin_names.push_back(ss.str());
-				bin_vals.push_back(*adc);
+				if(rechit) bin_vals.push_back(*adcR);
+				else bin_vals.push_back(*adc);
 			}
 			
 			if(bin_names.size()==0) return make_pair((TH2F*)NULL,(TGraphErrors*)NULL);
@@ -93,10 +94,11 @@ class DigiClass2 : public DigiClass {
 		bool norm;
 };
 
-void plotPulses(vector<string> fnames, vector<string> legnames, vector<string> outnames, vector<int> cuts, vector<Color_t> colors, bool norm=false, bool curve=false){
+void plotPulses(vector<string> fnames, vector<string> legnames, vector<string> outnames, vector<int> cuts, vector<Color_t> colors, bool norm=false, bool curve=false, bool rechit=false){
 	vector<TFile*> files;
 	vector<TGraphErrors*> profiles;
 	string poutname = "profile";
+    if(rechit) poutname += "_rechit";
 	if(curve) poutname += "_curve";
 	if(norm) poutname += "_norm";
 	
@@ -117,7 +119,7 @@ void plotPulses(vector<string> fnames, vector<string> legnames, vector<string> o
 		TTree* tree = (TTree*)file->Get("tree");
 		DigiClass2* dc = new DigiClass2(tree);
 		dc->norm = norm;
-		pair<TH2F*,TGraphErrors*> res = dc->Loop(cuts[f]);
+		pair<TH2F*,TGraphErrors*> res = dc->Loop(cuts[f],rechit);
 		TH2F* h2 = res.first;
 		h2->SetName(("h2"+outnames[f]).c_str());
 		h2->GetXaxis()->SetTitle("TS");

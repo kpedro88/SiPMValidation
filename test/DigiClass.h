@@ -24,6 +24,7 @@ public :
 
    // Declaration of leaf types
    vector<int>     *adc;
+   vector<int>     *adcR;
    Int_t           event;
    Int_t           ieta;
    Int_t           iphi;
@@ -31,6 +32,7 @@ public :
 
    // List of branches
    TBranch        *b_adc;   //!
+   TBranch        *b_adcR;   //!
    TBranch        *b_event;   //!
    TBranch        *b_ieta;   //!
    TBranch        *b_iphi;   //!
@@ -102,6 +104,7 @@ void DigiClass::Init(TTree *tree)
 
    // Set object pointer
    adc = 0;
+   adcR = 0;
    // Set branch addresses and branch pointers
    if (!tree) return;
    fChain = tree;
@@ -109,6 +112,7 @@ void DigiClass::Init(TTree *tree)
    fChain->SetMakeClass(1);
 
    fChain->SetBranchAddress("adc", &adc, &b_adc);
+   fChain->SetBranchAddress("adcR", &adcR, &b_adcR);
    fChain->SetBranchAddress("event", &event, &b_event);
    fChain->SetBranchAddress("ieta", &ieta, &b_ieta);
    fChain->SetBranchAddress("iphi", &iphi, &b_iphi);

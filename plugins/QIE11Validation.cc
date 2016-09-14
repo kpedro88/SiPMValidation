@@ -26,6 +26,10 @@
 #include "DataFormats/HcalDigi/interface/QIE11DataFrame.h"
 #include "DataFormats/HcalDigi/interface/HcalUpgradeDataFrame.h"
 
+//Hcal Rec hits
+#include "DataFormats/HcalRecHit/interface/HcalRecHitCollections.h"
+#include "DataFormats/HcalRecHit/interface/HBHERecHit.h"
+
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/Event.h"
 #include "FWCore/Framework/interface/EventSetup.h"
@@ -85,10 +89,11 @@ class QIE11Validation : public edm::stream::EDAnalyzer<> {
 	TTree *tt1;
 
 	//Branchs
-    std::vector<int>* adc;
+    std::vector<int> *adc, *adcR;
     int event, ieta, iphi, depth;
 
 	edm::EDGetTokenT<QIE11DigiCollection> tok_QIE11_;
+	edm::EDGetTokenT<HBHERecHitCollection> tok_RecHit_;
 
 	//adc2fC stuff
 	edm::ESHandle<HcalDbService> conditions;
@@ -106,10 +111,12 @@ class QIE11Validation : public edm::stream::EDAnalyzer<> {
 //
 // constructors and destructor
 //
-QIE11Validation::QIE11Validation(const edm::ParameterSet& iConfig) : adc(NULL), event(0), ieta(0), iphi(0), depth(0)
+QIE11Validation::QIE11Validation(const edm::ParameterSet& iConfig) : adc(NULL), adcR(NULL), event(0), ieta(0), iphi(0), depth(0)
 {
 	edm::InputTag inputQIE11 = iConfig.getParameter<edm::InputTag>("QIE11tag");
 	tok_QIE11_= consumes<QIE11DigiCollection>(inputQIE11);
+	edm::InputTag inputRecHit = iConfig.getParameter<edm::InputTag>("RecHittag");
+	tok_RecHit_= consumes<HBHERecHitCollection>(inputRecHit);
 
 	outputfile_ = iConfig.getParameter<std::string>("rootOutputFile");
 
@@ -117,6 +124,7 @@ QIE11Validation::QIE11Validation(const edm::ParameterSet& iConfig) : adc(NULL), 
 	tt1 = new TTree("tree","tree");
 
 	tt1->Branch("adc","std::vector<int>",&adc);
+	tt1->Branch("adcR","std::vector<int>",&adcR);
 	tt1->Branch("event",&event,"event/I");
 	tt1->Branch("ieta",&ieta,"ieta/I");
 	tt1->Branch("iphi",&iphi,"iphi/I");
@@ -153,6 +161,10 @@ QIE11Validation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
 	iEvent.getByToken(tok_QIE11_,DigiQIE11);
 	const QIE11DigiCollection *DigiQIE11Collection = DigiQIE11.product () ;
 
+	edm::Handle<HBHERecHitCollection> RecHitHBHE;
+	iEvent.getByToken(tok_RecHit_,RecHitHBHE);
+	const HBHERecHitCollection *RecHitHBHECollection = RecHitHBHE.product () ;
+
 	for (auto j : *DigiQIE11Collection){
 		QIE11DataFrame digi(j);
 
@@ -161,22 +173,40 @@ QIE11Validation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
 		iphi = cell.iphi();
 		depth = cell.depth();
 
-/*
-		const HcalQIECoder* channelCoder = conditions->getHcalCoder(cell);
-		const HcalQIEShape* shape = conditions->getHcalShape(channelCoder);
-		HcalCoderDb coder(*channelCoder, *shape);
-		CaloSamples tool;
-		coder.adc2fC(digi, tool);
-*/
+		for (auto k : *RecHitHBHECollection){
+
+			if(k.id()==cell){
+		        delete adcR; adcR = new std::vector<int>(10,0);
+                auto adcRtmp = adcR->data();
+
+				int auxwd1 = k.aux();  // TS = 0,1,2,3 info
+				int auxwd2 = k.auxHBHE();      // TS = 4,5,6,7 info
+				int auxwd3 = k.auxPhase1();      // TS = 8,9 info
+				
+				// 0x7F --> 7bits 127
+				// 0xFF --> 8bits 255
+
+				adcRtmp[0] = (auxwd1)       & 0xFF;
+				adcRtmp[1] = (auxwd1 >> 8)  & 0xFF;
+				adcRtmp[2] = (auxwd1 >> 16) & 0xFF;
+				adcRtmp[3] = (auxwd1 >> 24) & 0xFF;				
+				adcRtmp[4] = (auxwd2)       & 0xFF;
+				adcRtmp[5] = (auxwd2 >> 8)  & 0xFF;
+				adcRtmp[6] = (auxwd2 >> 16) & 0xFF;
+				adcRtmp[7] = (auxwd2 >> 24) & 0xFF;
+				adcRtmp[8] = (auxwd3 )      & 0xFF;
+				adcRtmp[9] = (auxwd3 >> 8)  & 0xFF;
+
+				break;
+			}
+
+		}
 
 		delete adc; adc = new std::vector<int>(10,0);
-//		bool doFill = false;
 		bool doFill = true;
 		for (int k=0; k<digi.samples(); k++) {
 			QIE11DataFrame::Sample sam = digi[k];
 			adc->at(k) = sam.adc();
-			//fc = tool[k];
-//			if(sam.soi() && sam.adc() > 150) doFill = true;
 		}
 		if(doFill) {
 			tt1->Fill(); //Fill the tree
