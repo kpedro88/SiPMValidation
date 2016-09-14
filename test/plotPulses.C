@@ -18,15 +18,44 @@
 #include <cmath>
 #include <utility>
 #include <algorithm>
+#include <cstdlib>
 
 using namespace std;
 
 void DigiClass::Loop() {}
 
+void plotSinglePulse(vector<int>& data, string legname, string outname){
+	TCanvas* can = new TCanvas("ctemp","ctemp");
+	TH1F* htemp = new TH1F("pulse","",10,-0.5,9.5);
+	for(unsigned x = 0; x < htemp->GetNbinsX(); ++x){
+		htemp->SetBinContent(x+1,data[x]);
+	}
+	double ymin = *(min_element(data.begin(),data.end()));
+	double ymax = *(max_element(data.begin(),data.end()));
+	htemp->GetXaxis()->SetTitle("TS");
+	htemp->GetYaxis()->SetTitle("adc");
+	htemp->GetYaxis()->SetRangeUser(max(ymin*0.9,0.0),ymax*1.1);
+	htemp->Draw("hist");
+
+	TPaveText* pave = new TPaveText(0.25,0.925,0.75,0.975,"NDC");
+	pave->AddText(legname.c_str());
+	pave->SetFillColor(0);
+	pave->SetBorderSize(0);
+	pave->SetTextFont(42);
+	pave->SetTextSize(0.05);
+	pave->Draw("same");
+	
+	can->Print((outname+".png").c_str(),"png");
+	can->Close();
+	delete htemp;
+	delete can;
+	delete pave;
+}
+
 class DigiClass2 : public DigiClass {
 	public:
 		DigiClass2(TTree *tree=0) : DigiClass(tree), norm(false) {}
-		pair<TH2F*,TGraphErrors*> Loop(int cut){
+		pair<TH2F*,TGraphErrors*> Loop(int cut, string plotalldir){
 			if (fChain == 0) return make_pair((TH2F*)NULL,(TGraphErrors*)NULL);
 
 			vector<string> bin_names;
@@ -43,8 +72,12 @@ class DigiClass2 : public DigiClass {
 				
 				stringstream ss;
 				ss << "i#eta = " << ieta << " i#phi = " << iphi << " d = " << depth;
+				stringstream ss2;
+				ss2 << plotalldir << "/event" << jentry << "_ieta" << ieta << "_iphi" << iphi << "_depth" << depth;
 				bin_names.push_back(ss.str());
 				bin_vals.push_back(*adc);
+
+				if(plotalldir.size()>0) plotSinglePulse(bin_vals.back(),ss.str(),ss2.str());
 			}
 			
 			if(bin_names.size()==0) return make_pair((TH2F*)NULL,(TGraphErrors*)NULL);
@@ -93,7 +126,7 @@ class DigiClass2 : public DigiClass {
 		bool norm;
 };
 
-void plotPulses(vector<string> fnames, vector<string> legnames, vector<string> outnames, vector<int> cuts, vector<Color_t> colors, bool norm=false, bool curve=false){
+void plotPulses(vector<string> fnames, vector<string> legnames, vector<string> outnames, vector<int> cuts, vector<Color_t> colors, bool norm=false, bool curve=false, bool plotall=false){
 	vector<TFile*> files;
 	vector<TGraphErrors*> profiles;
 	string poutname = "profile";
@@ -117,7 +150,13 @@ void plotPulses(vector<string> fnames, vector<string> legnames, vector<string> o
 		TTree* tree = (TTree*)file->Get("tree");
 		DigiClass2* dc = new DigiClass2(tree);
 		dc->norm = norm;
-		pair<TH2F*,TGraphErrors*> res = dc->Loop(cuts[f]);
+		string plotalldir = "";
+		if(plotall){
+			plotalldir = "pulses_"+fnames[f].substr(0,fnames[f].size()-5);
+            system(("mkdir -p "+plotalldir).c_str());
+		}
+		pair<TH2F*,TGraphErrors*> res = dc->Loop(cuts[f],plotalldir);
+		if(plotall) system(("tar -czf "+plotalldir+".tar.gz "+plotalldir+"/").c_str());
 		TH2F* h2 = res.first;
 		h2->SetName(("h2"+outnames[f]).c_str());
 		h2->GetXaxis()->SetTitle("TS");
