@@ -7,6 +7,11 @@ options.register ('inputName',
 				  VarParsing.multiplicity.singleton,
 				  VarParsing.varType.string,
 				  "name of input file")
+options.register ('tagName',
+				  'simHcalUnsuppressedDigis',
+				  VarParsing.multiplicity.singleton,
+				  VarParsing.varType.string,
+				  "name of input tag")
 options.parseArguments()
 
 process = cms.Process("Demo")
@@ -32,7 +37,7 @@ process.source = cms.Source("PoolSource",
 
 process.demo = cms.EDAnalyzer("QIE11Validation",
     rootOutputFile = cms.string('QIE11digis_'+options.inputName+'.root'),
-    QIE11tag = cms.InputTag("simHcalUnsuppressedDigis","HBHEQIE11DigiCollection")
+    QIE11tag = cms.InputTag(options.tagName,"HBHEQIE11DigiCollection")
 )
 
 process.p = cms.Path(process.demo)
