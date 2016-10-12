@@ -81,6 +81,7 @@ class HOValidation : public edm::EDAnalyzer {
 
 	//Branchs
     std::vector<int>* adc;
+    std::vector<double>* fC;
     int event, ieta, iphi, depth;
 
 	edm::EDGetTokenT<HODigiCollection> tok_HO_;
@@ -101,7 +102,7 @@ class HOValidation : public edm::EDAnalyzer {
 //
 // constructors and destructor
 //
-HOValidation::HOValidation(const edm::ParameterSet& iConfig) : adc(NULL), event(0), ieta(0), iphi(0), depth(0)
+HOValidation::HOValidation(const edm::ParameterSet& iConfig) : adc(NULL), fC(NULL), event(0), ieta(0), iphi(0), depth(0)
 {
 	edm::InputTag inputHO = iConfig.getParameter<edm::InputTag>("HOtag");
 	tok_HO_= consumes<HODigiCollection>(inputHO);
@@ -112,6 +113,7 @@ HOValidation::HOValidation(const edm::ParameterSet& iConfig) : adc(NULL), event(
 	tt1 = new TTree("tree","tree");
 
 	tt1->Branch("adc","std::vector<int>",&adc);
+	tt1->Branch("fC","std::vector<double>",&fC);
 	tt1->Branch("event",&event,"event/I");
 	tt1->Branch("ieta",&ieta,"ieta/I");
 	tt1->Branch("iphi",&iphi,"iphi/I");
@@ -148,6 +150,7 @@ HOValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	iEvent.getByToken(tok_HO_,DigiHO);
 	const HODigiCollection *DigiHOCollection = DigiHO.product () ;
 
+
 	for (auto digi : *DigiHOCollection){
 		HcalDetId cell(digi.id());
 //		if(cell.subdet()!=HcalEndcap) continue;
@@ -155,11 +158,19 @@ HOValidation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 		iphi = cell.iphi();
 		depth = cell.depth();
 
+		const HcalQIECoder* channelCoder = conditions->getHcalCoder(cell);
+		const HcalQIEShape* shape = conditions->getHcalShape(channelCoder);
+		HcalCoderDb coder(*channelCoder, *shape);
+		CaloSamples tool;
+		coder.adc2fC(digi, tool);
+
 		delete adc; adc = new std::vector<int>(10,0);
+		delete fC; fC = new std::vector<double>(10,0.);
 //		bool doFill = false;
 		bool doFill = true;
 		for (int k=0; k<digi.size(); k++) {
 			adc->at(k) = digi[k].adc();
+			fC->at(k) = tool[k];
 //			if(k==digi.presamples() && digi[k].adc() > 100) doFill = true;
 		}
 		if(doFill) {
