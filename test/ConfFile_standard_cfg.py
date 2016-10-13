@@ -18,8 +18,8 @@ process = cms.Process("Demo")
 
 # import of standard configurations
 process.load('Configuration.StandardSequences.Services_cff')
-process.load('Configuration.StandardSequences.GeometryRecoDB_cff')
-process.load('Configuration.Geometry.GeometrySimDB_cff')
+process.load('Configuration.Geometry.GeometryExtended2017devReco_cff')
+process.load('Configuration.Geometry.GeometryExtended2017dev_cff')
 process.load("FWCore.MessageService.MessageLogger_cfi")
 
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
@@ -28,7 +28,7 @@ process.MessageLogger.cerr.FwkReport.reportEvery = 1
 
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 from Configuration.AlCa.GlobalTag import GlobalTag
-process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:run2_mc', '')
+process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:phase1_2017_hcaldev', '')
 
 process.source = cms.Source("PoolSource",
     # replace 'myfile.root' with the source file you want to use
@@ -41,10 +41,3 @@ process.demo = cms.EDAnalyzer("QIE11Validation",
 )
 
 process.p = cms.Path(process.demo)
-
-# Automatic addition of the customisation function from SLHCUpgradeSimulations.Configuration.HCalCustoms
-from SLHCUpgradeSimulations.Configuration.HCalCustoms import customise_Hcal2017Full
-
-#call to customisation function customise_Hcal2017Full imported from SLHCUpgradeSimulations.Configuration.HCalCustoms
-process = customise_Hcal2017Full(process)
-
