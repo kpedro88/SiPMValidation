@@ -32,7 +32,7 @@ void clean(string& line, char alt='_'){
 //run example:
 //root -l 'treeValidateComp.C+("step2new","step2","subdet==2&&M0>0.01&&chi2<500",{"M2","M0","chi2","time"},1)'
 //root -l 'treeValidateComp.C+("tree_pion_step2new","tree_pion_step2","ecal<1",{"hcal","hcal_raw"},0)'
-void treeValidateComp(string f_new, string f_ref, string cut, vector<string> qtys, bool reco = false){
+void treeValidateComp(string f_new, string f_ref, string cut, vector<string> qtys, bool reco = false, string tag = "HLT"){
 	string treename = reco ? "Events" : "tree";
 	//open files
 	TFile* file[2];
@@ -44,12 +44,13 @@ void treeValidateComp(string f_new, string f_ref, string cut, vector<string> qty
 	
 	//aliases
 	if(reco){
+		string fulltag = "HBHERecHitsSorted_hbhereco__"+tag+".obj.obj";
 		for(int f = 0; f < 2; f++){
-			tree[f]->SetAlias("subdet","HBHERecHitsSorted_hbhereco__HLT.obj.obj.id().subdet()");
-			tree[f]->SetAlias("M2","HBHERecHitsSorted_hbhereco__HLT.obj.obj.energy()");
-			tree[f]->SetAlias("M0","HBHERecHitsSorted_hbhereco__HLT.obj.obj.eraw()");
-			tree[f]->SetAlias("chi2","HBHERecHitsSorted_hbhereco__HLT.obj.obj.chi2()");
-			tree[f]->SetAlias("time","HBHERecHitsSorted_hbhereco__HLT.obj.obj.time()");
+			tree[f]->SetAlias("subdet",(fulltag+".id().subdet()").c_str());
+			tree[f]->SetAlias("M2",(fulltag+".energy()").c_str());
+			tree[f]->SetAlias("M0",(fulltag+".eraw()").c_str());
+			tree[f]->SetAlias("chi2",(fulltag+".chi2()").c_str());
+			tree[f]->SetAlias("time",(fulltag+".time()").c_str());
 		}
 	}
 	
