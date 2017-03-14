@@ -19,7 +19,7 @@
 using namespace std;
 
 void clean(string& line, char alt='_'){
-	string illegalChars = "\\/:?\"<>|()";
+	string illegalChars = "\\/:?\"<>|()$*";
 	string::iterator it;
 	for (it = line.begin(); it != line.end(); ++it){
 		bool found = illegalChars.find(*it) != string::npos;
@@ -33,20 +33,29 @@ void clean(string& line, char alt='_'){
 //root -l 'treeValidateComp.C+("step2new","step2","subdet==2&&M0>0.01&&chi2<500",{"M2","M0","chi2","time"},1)'
 //root -l 'treeValidateComp.C+("tree_pion_step2new","tree_pion_step2","ecal<1",{"hcal","hcal_raw"},0)'
 void treeValidateComp(string f_new, string f_ref, string cut, vector<string> qtys, bool reco = false, string tag = "HLT"){
+	bool debugcalo = false;
 	string treename = reco ? "Events" : "tree";
 	//open files
 	TFile* file[2];
 	TTree* tree[2];
 	file[0] = TFile::Open((f_new+".root").c_str());
 	tree[0] = (TTree*)file[0]->Get(treename.c_str());
+    if(!tree[0]) {
+		treename = "CaloSamplesAnalyzer/tree";
+        tree[0] = (TTree*)file[0]->Get(treename.c_str());
+		debugcalo = true;
+	}
 	file[1] = TFile::Open((f_ref+".root").c_str());
 	tree[1] = (TTree*)file[1]->Get(treename.c_str());
 	
 	//aliases
 	if(reco){
-		string fulltag = "HBHERecHitsSorted_hbhereco__"+tag+".obj.obj";
+		string fulltag = "HBHERecHitsSorted_hbheprereco__"+tag+".obj.obj";
 		for(int f = 0; f < 2; f++){
 			tree[f]->SetAlias("subdet",(fulltag+".id().subdet()").c_str());
+			tree[f]->SetAlias("ieta",(fulltag+".id().ieta()").c_str());
+			tree[f]->SetAlias("iphi",(fulltag+".id().iphi()").c_str());
+			tree[f]->SetAlias("depth",(fulltag+".id().depth()").c_str());
 			tree[f]->SetAlias("M2",(fulltag+".energy()").c_str());
 			tree[f]->SetAlias("M0",(fulltag+".eraw()").c_str());
 			tree[f]->SetAlias("chi2",(fulltag+".chi2()").c_str());
@@ -121,7 +130,7 @@ void treeValidateComp(string f_new, string f_ref, string cut, vector<string> qty
 		pad1->SetMargin(0.15,0.05,0.02,0.05);
 		pad1->Draw();
 		pad1->SetTicks(1,1);
-		if(reco) pad1->SetLogy();
+		if(reco or debugcalo) pad1->SetLogy();
 		TPad* pad2;
 		can->cd();
 		pad2 = new TPad("dmc","",0,0,1.0,0.25);
@@ -142,7 +151,7 @@ void treeValidateComp(string f_new, string f_ref, string cut, vector<string> qty
 			hist[f][q]->SetLineColor(colors[f]);
 			hist[f][q]->SetStats(kTRUE);
 			gStyle->SetOptStat("nemr");
-			if(!reco) hist[f][q]->Fit("gaus","0Q");
+			if(false) hist[f][q]->Fit("gaus","0Q");
 			
 			hist[f][q]->GetXaxis()->SetLabelOffset(999);
 			//hist[f][q]->GetYaxis()->SetTitleOffset(1.1);
@@ -154,7 +163,7 @@ void treeValidateComp(string f_new, string f_ref, string cut, vector<string> qty
 		
 		//draw histos
 		hist[1][q]->Draw("hist");
-		if(!reco){
+		if(false){
 			TF1* ftmp = hist[1][q]->GetFunction("gaus");
 			ftmp->SetLineColor(fitcolors[1]);
 			ftmp->SetLineStyle(styles[1]);
@@ -167,7 +176,7 @@ void treeValidateComp(string f_new, string f_ref, string cut, vector<string> qty
 		//cout << "x1 = " << ps1->GetX1NDC() << ", x2 = " << ps1->GetX2NDC() << endl;
 		
 		hist[0][q]->Draw("hist sames");
-		if(!reco){
+		if(false){
 			TF1* ftmp = hist[0][q]->GetFunction("gaus");
 			ftmp->SetLineColor(fitcolors[0]);
 			ftmp->SetLineStyle(styles[0]);

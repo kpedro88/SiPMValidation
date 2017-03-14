@@ -22,9 +22,7 @@
 //include files to support access to the QIE11 digis
 #include "DataFormats/Common/interface/Handle.h"
 #include "DataFormats/HcalDigi/interface/HcalDigiCollections.h"
-#include "DataFormats/HcalDigi/interface/HcalUpgradeDataFrame.h"
 #include "DataFormats/HcalDigi/interface/QIE11DataFrame.h"
-#include "DataFormats/HcalDigi/interface/HcalUpgradeDataFrame.h"
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/Event.h"
