@@ -22,9 +22,7 @@
 //include files to support access to the QIE11 digis
 #include "DataFormats/Common/interface/Handle.h"
 #include "DataFormats/HcalDigi/interface/HcalDigiCollections.h"
-#include "DataFormats/HcalDigi/interface/HcalUpgradeDataFrame.h"
 #include "DataFormats/HcalDigi/interface/QIE11DataFrame.h"
-#include "DataFormats/HcalDigi/interface/HcalUpgradeDataFrame.h"
 
 #include "FWCore/Framework/interface/Frameworkfwd.h"
 #include "FWCore/Framework/interface/Event.h"
@@ -87,7 +85,7 @@ class QIE11Validation : public edm::stream::EDAnalyzer<> {
 	//Branchs
     std::vector<int>* adc;
     std::vector<double>* fC;
-    int event, ieta, iphi, depth;
+    int event, ieta, iphi, depth, type;
 
 	edm::EDGetTokenT<QIE11DigiCollection> tok_QIE11_;
 
@@ -107,7 +105,7 @@ class QIE11Validation : public edm::stream::EDAnalyzer<> {
 //
 // constructors and destructor
 //
-QIE11Validation::QIE11Validation(const edm::ParameterSet& iConfig) : adc(NULL), fC(NULL), event(0), ieta(0), iphi(0), depth(0)
+QIE11Validation::QIE11Validation(const edm::ParameterSet& iConfig) : adc(NULL), fC(NULL), event(0), ieta(0), iphi(0), depth(0), type(0)
 {
 	edm::InputTag inputQIE11 = iConfig.getParameter<edm::InputTag>("QIE11tag");
 	tok_QIE11_= consumes<QIE11DigiCollection>(inputQIE11);
@@ -123,6 +121,7 @@ QIE11Validation::QIE11Validation(const edm::ParameterSet& iConfig) : adc(NULL), 
 	tt1->Branch("ieta",&ieta,"ieta/I");
 	tt1->Branch("iphi",&iphi,"iphi/I");
 	tt1->Branch("depth",&depth,"depth/I");
+	tt1->Branch("type",&type,"type/I");
 
 	event = 0;
 }
@@ -162,6 +161,9 @@ QIE11Validation::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup
 		ieta = cell.ieta();
 		iphi = cell.iphi();
 		depth = cell.depth();
+
+		const HcalSiPMParameter* sipmPar = conditions->getHcalSiPMParameter(cell);
+		type = sipmPar->getType();
 
 		const HcalQIECoder* channelCoder = conditions->getHcalCoder(cell);
 		const HcalQIEShape* shape = conditions->getHcalShape(channelCoder);
